@@ -2,9 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Tu te mets combien en Blandine</title>
-
 <style>
 body {
   font-family: Calibri;
@@ -57,6 +56,7 @@ button {
   font-weight: bold;
   font-size: 18px;
   transition: 0.2s;
+  touch-action: manipulation; /* ✅ mobile */
 }
 
 button:active {
@@ -96,7 +96,7 @@ td, th {
   padding: 6px;
 }
 
-/* 🎯 THEME GRID 3 COLONNES */
+/* 🎯 THEME GRID */
 #themeButtons {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -104,21 +104,33 @@ td, th {
   margin-top: 10px;
 }
 
-#themeButtons button {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
+/* réponses */
+#answers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* MOBILE OPTIMIZATION */
 @media (max-width: 600px) {
+
+  body {
+    font-size: 18px;
+    align-items: flex-start;
+  }
   .container {
     border-radius: 0;
-    height: 100vh;
+    min-height: 100vh;
     max-width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    padding: 15px;
+  }
+
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+
+  input {
+    font-size: 18px;
+    padding: 14px;			  
   }
 
   button {
@@ -129,6 +141,13 @@ td, th {
   /* mobile -> 2 colonnes */
   #themeButtons {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .table {
+    font-size: 14px;
+    display: block;
+    overflow-x: auto;
   }
 }
 </style>
