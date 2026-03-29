@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Quiz Tu te mets combien en Blandine</title>
+
+<style>
+body {
+  font-family: Calibri;
+  font-size: 26px;
+  background: radial-gradient(circle at top, #dff4f9, #a5e0ee);
+  color: white;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  width: 95%;
+  max-width: 1000px;
+  background: linear-gradient(145deg, #28b1d2, #dff4f9);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 0 25px rgba(233,244,249,0.15);
+  border: 1px solid rgba(233,244,249,0.2);
+  text-align: center;
+}
+
+h2, h3 {
+  color: #12505e;
+  margin-top: 10px;
+}
+
+input {
+  width: 90%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  margin-bottom: 10px;
+  font-size: 20px;
+  text-align: center;
+}
+
+button {
+  margin: 6px 0;
+  padding: 14px;
+  width: 95%;
+  border-radius: 12px;
+  border: 1px solid rgba(233,244,249,0.3);
+  cursor: pointer;
+  background: linear-gradient(145deg, #166072, #2692ac);
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  transition: 0.2s;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.correct { background: #1f8f3a !important; }
+.wrong { background: #b91c1c !important; }
+.hidden { display: none; }
+
+/* TIMER */
+#timerBar {
+  height: 10px;
+  width: 100%;
+  background: rgba(233,244,249,0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+#timerFill {
+  height: 100%;
+  width: 100%;
+  background: gold;
+  transition: width 1s linear;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+  font-size: 18px;
+}
+
+td, th {
+  border: 1px solid rgba(233,244,249,0.3);
+  padding: 6px;
+}
+
+/* 🎯 THEME GRID 3 COLONNES */
+#themeButtons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#themeButtons button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+}
+
+/* MOBILE OPTIMIZATION */
+@media (max-width: 600px) {
+  .container {
+    border-radius: 0;
+    height: 100vh;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  button {
+    font-size: 18px;
+    padding: 16px;
+  }
+
+  /* mobile -> 2 colonnes */
+  #themeButtons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- START -->
+<div class="container" id="start">
+  <h2>🎮 TU TE METS COMBIEN EN BLANDINE 🍹</h2>
+  <input id="pseudo" placeholder="Indique ton nom d'équipe ici">
+  <button onclick="start()">Commencer</button>
+  <button onclick="showLeaderboard()">🏆 Classement</button>
+</div>
+
+<!-- THEMES -->
+<div class="container hidden" id="themes">
+  <h3>📚 CHOISIS UN THEME</h3>
+  <div id="themeButtons"></div>
+  <p id="score">Score : 0</p>
+  <h5>N'hésites pas, tu devras répondre à chacun des thèmes 😉</h5>
+  <h2>🚫 Interdiction de tricher via recherche internet... 🚫</h2>
+
+</div>
+
+<!-- QUESTIONS -->
+<div class="container hidden" id="questions">
+  <h3>🎯 CHOISIS UNE QUESTION</h3>
+  <div id="questionButtons"></div>
+</div>
+
+<!-- QUIZ -->
+<div class="container hidden" id="quiz">
+  <h3 id="question"></h3>
+  <div id="answers"></div>
+  <p id="timerText">⏱ Temps restant : 10</p>
+  <div id="timerBar"><div id="timerFill"></div></div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="container hidden" id="leaderboardScreen">
+  <h2>🏆 Classement</h2>
+  <div id="podium"></div>
+
+  <button onclick="exportCSV()">📥 Export Excel</button>
+  <button onclick="resetScores()">🗑 Reset scores</button>
+  <button onclick="backToMenu()">Retour</button>
+
+  <table class="table">
+    <thead><tr><th>Equipe</th><th>Score</th></tr></thead>
+    <tbody id="leaderboard"></tbody>
+  </table>
+</div>
+
+<script>
+
+let player = "";
+let score = 0;
+let themes = [];
+let currentTheme = "";
+let timer;
+let timeLeft = 30;
+const ADMIN_PASS = "admin123";
+
+const data = {
+  "Sports": [
+    { q:"Quel a été son sport de jeunesse ?", a:["Le football","La danse","Le basket","L'escalade"], c:2, pts:1 },
+    { q:"Quel agrès avait sa préférence en gymnastique ?", a:["Le sol","La poutre","Les barres asymétriques","Le saut de cheval"], c:2, pts:2 },
+    { q:"Quel type de boxe pratique t-elle ?", a:["La boxe anglaise","La boxe française","La boxe thaï","La boxe japonaise"], c:3, pts:3 },
+    { q:"Pourquoi connaît-elle toutes les stars du foot des années 1990-2000 ? ", a:["Elle collectionnait les vignettes Panini","Elle était supporter du LOSC","Elle jouait au foot en club","Elle regardait Téléfoot tous les dimanches"], c:3, pts:4 },
+    { q:"Quel est le nom du club de boxe fréquenté par Blandine et Guillaume ?", a:["Le Boxing Club de Compiègne","Le Compiègne Boxe Club","Le Ring Olympique Compiégnois","Le Cercle Boxing Compiégnois"], c:2, pts:5 }
+  ],
+  "Voyages": [
+    { q:"Quelle est la dernière destination de voyage de Blandine avec son mari et ses enfants ?", a:["L'Egypte","La Namibie","Le Sénégal","La Tanzanie"], c:3, pts:1 },
+    { q:"Quelle île ont-ils visité en 2022 ?", a:["Ibiza","Madère","La Crète","L'Irlande"], c:0, pts:2 },
+    { q:"Dans quel pays n'a-t-elle PAS été pendant ses voyage d'octobre ?  ", a:["Portugal","Espagne","Grèce","Italie"], c:2, pts:3 },
+    { q:"Dans quelle station n'ont-ils PAS passé de vacances au ski ?", a:["La Chapelle d'Abondance","La Clusaz","La Plagne","Les Arcs"], c:1, pts:4 },
+    { q:"Où la famille Hingant est-elle partie en voyage à l'automne 2024 ?", a:["Dans les Pouilles","En Andalousie","Au Portugal","Nulle part, ils sont restés à Compiègne"], c:1, pts:5 }
+  ],
+  "Mariage": [
+    { q:"Qui a marié civilement Blandine et Guillaume ?", a:["Le maire de Bois-Colombes","La mère de Guillaume","Le père de Blandine","Le maire de Marcq-en-Baroeul"], c:1, pts:1 },
+    { q:"Où Guillaume et Blandine sont-ils partis en voyage de noces ?", a:["L'Ile Maurice","La Guadeloupe","Les Maldives","Les Seychelles"], c:0, pts:2 },
+    { q:"Quelle sitcom était le thème de leurs fiançailles ?", a:["Friends","Les Simpsons","Caméra Café","Un gars une fille"], c:3, pts:3 },
+    { q:"Dans quel lieu Blandine a-t-elle été demandée en mariage par Guillaume ?", a:["A Vienne","A Rome","A Barcelone","A Londres"], c:0, pts:4 },
+    { q:"Quel est le nom de l'église dans laquelle Blandine et Guillaume se sont mariés ?", a:["Saint-Pierre","Saint-Jacques","Saint-Paul","Saint-Martin"], c:2, pts:5 }
+  ],
+  "Naissances": [
+    { q:"En quelle année est né son premier enfant, Alex ?", a:["2006","2007","2008","2009"], c:3, pts:1 },
+    { q:"Dans quelle ville sont nés Alex et Chloé ?", a:["Compiègne","Bois-Colombes","Margny-les-Compiègne","Asnières-sur-Seine"], c:0, pts:2 },
+    { q:"Quelle est la date de naissance précise de Charlie ?", a:["18/10/2014","18/03/2015","18/05/2015","18/07/2015"], c:2, pts:3 },
+    { q:"Quel jour était le 25 février 2011, date de naissance de Chloé ?", a:["Un jeudi","Un vendredi","Un samedi","Un dimanche"], c:1, pts:4 },
+    { q:"Dans quel modèle de voiture est née Chloé ?", a:["Une Citroën C4 Picasso","Une Opel Zafira","Un Renault Scénic","Une Fiat Multipla"], c:0, pts:5 }
+  ],
+  "Dernoncourt": [
+    { q:"Comment s'appellent les parents de Blandine ?", a:["Charles et Camilla","Olivier et Véronique","David et Victoria","Bernard et Bianca"], c:1, pts:1 },
+    { q:"Comment s'appellent les deux frères de Blandine ?", a:["Bertrand et Julien","David et Jonathan","Tom et Jerry","Franck et Thibaut"], c:3, pts:2 },
+    { q:"Où Blandine a-t-elle passé ses premières vacances sans Papa/Maman mais avec un de ses frères ?", a:["Barcelone","Ibiza","Malaga","Alicante"], c:3, pts:3 },
+    { q:"Où la famille Dernoncourt passait-elle ses vacances quand elle était petite ?", a:["Knokke-Heist","Vrouwenpolder","Oostduinkerke","Middelkerke"], c:2, pts:4 },
+    { q:"Quel type de magasin sort comme 1ère réponse lorsque l'on tape 'Dernoncourt' dans Google ?", a:["Un grossiste en coiffure","Une friterie","Un fleuriste","Un grossiste en habillement"], c:0, pts:5 }
+  ],
+  "Travail": [
+    { q:"Dans quelle entreprise travaille Blandine actuellement ?", a:["Chez Dior","Chez Givenchy","Chez Chanel","Chez Séphora"], c:2, pts:1 },
+    { q:"Dans quelle entreprise a-t-elle démarré sa carrière ?", a:["Guerlain","Bourjois","Gemey-Maybelline","L'Occitane"], c:1, pts:2 },
+    { q:"Dans quelle enseigne de fast-food a-t-elle travaillé ?", a:["Burker King (Hummmmm!)","Mc Donalds","Quick","KFC"], c:2, pts:3 },
+    { q:"Quel est l'intitulé de son poste actuel ?", a:["Responsable Qualité","Responsable Logistique","Responsable Production","Responsable R&D"], c:0, pts:4 },
+    { q:"Quelle est l'adresse de l'usine Chanel de Compiègne ?", a:["41 rue Martre","7 rue Ferdinand de Lesseps","38 avenue Paul Claudel","151 rue André Durouchez"], c:1, pts:5 }
+  ],
+  "Cinéma": [
+    { q:"Laisse-t-on bébé dans un coin ?", a:["Oui","Non","Je n'ai pas compris la question","Dans quel coin ? Il y en a 4 dans la pièce !"], c:1, pts:1 },
+    { q:"Qui a-t-elle remplacé au pied levé pour une pub Chanel ? ", a:["Margot Robbie","Natalie Portman","Scarlett Johansson","Emma Stone"], c:0, pts:2 },
+    { q:"A quel festival a-t-elle participé, incognito ?", a:["Au festival des Vieilles Charrues","Au festival de l'Alpe d'Huez","Au festival de Cannes","Au festival de Deauville"], c:2, pts:3 },
+    { q:"Quel film sur le sport a-t-elle visionné de très nombreuses fois pendant son enfance ?", a:["Rasta Rocket","Nadia","Billy Elliot","Space Jam"], c:1, pts:4 },
+    { q:"A cause de qui est-elle traumatisée à vie des films policiers et des scènes d'angoisse ? ", a:["Rick Hunter","Magnum","Walker Texas Ranger","Mike Hammer"], c:0, pts:5 }
+  ],
+  "Musique": [
+    { q:"Quelle compagnie rêverait-elle d'entendre ce soir mais qu'elle n'a pas osé demander au DJ ?", a:["La Compagnie du Lit","La Compagnie des Déménageurs","La Compagnie du Blanc","La Compagnie Créole"], c:3, pts:1 },
+    { q:"Quelle est la marque des enceintes installées dans leur maison ?", a:["JBL","Sonos","Bose","Bong & Olufsen"], c:1, pts:2 },
+    { q:"Quelle sera sa chanson préférée pour danser ce soir ?", a:["Happy, de Pharell Williams","The Ballet Girl, d'Aden Foyer","Come back to me, d'Hollysiz","Dancing Queen, d'ABBA"], c:2, pts:3 },
+    { q:"Quel chanteur/chanteuse n'a PAS encore été vu en concert par Blandine et Chloé ?", a:["Julien Doré","Matt Pokora","Jenifer","Gims"], c:3, pts:4 },
+    { q:"Au concert de quelle artiste américaine a-t-elle passé 2h sur les pieds de Guillaume pour gratter 5 cm et voir quelque chose ?", a:["Madonna","Adele","Lady Gaga","Beyoncé"], c:0, pts:5 }
+  ],
+  "Vêtements": [
+    { q:"Que regarde-t-elle absolument avant de choisir sa tenue du lendemain ? ", a:["Son agenda Outlook","La météo","Son compte Instagram","Les actus du jour"], c:1, pts:1 },
+    { q:"Combien de temps passe-t-elle tous les soirs à choisir sa tenue du lendemain ? ", a:["2 minutes","15 minutes","30 minutes","1 heure"], c:1, pts:2 },
+    { q:"En moyenne, combien lance-t-elle de machines à laver par semaine ? ", a:["4","7","10","13"], c:2, pts:3 },
+    { q:"Quelle marque, créée en 2013, ne pourra jamais faire faillite tant qu'elle a Internet ou la 5G ? ", a:["Maje","Sandro","Balzac","Sézane"], c:3, pts:4 },
+    { q:"Dans la collection 2026 de Sézane, à quel type de pièce correspond la référence 'Marianne' ?", a:["Une robe","Un chemisier","Un collier","Une écharpe"], c:3, pts:5 }
+  ],
+  "Moyens de transport": [
+    { q:"Combien d'ailes de la Fiat 500 sont encore en bon état ?", a:["Les deux (étonnamment)","Une seule (la gauche)","Aucune","La Fiat 500 a été revendue depuis janvier"], c:0, pts:1 },
+    { q:"De quelle couleur est sa voiture actuelle ? ", a:["Vert pistache","Rose paillettes","Rouge passion","Bleu canard"], c:3, pts:2 },
+    { q:"Avec quel engin électrique roule-t-elle dans Compiègne les jours de beau temps ?", a:["Un scooter","Une trottinette","Un vélo","Un segway"], c:0, pts:3 },
+    { q:"Dans quelle voiture de pétasse roule-t-elle ?", a:["Une Mini Cooper","Une Volskwagen New Beetle","Une Audi A1","Une Fiat 500"], c:3, pts:4 },
+    { q:"Avec quelle voiture raccompagnait-elle Guillaume après les soirées à Lille ? ", a:["Une Renault Clio","Une Opel Corsa","Une Fiat Cinquecento","Une Peugeot 206"], c:2, pts:5 }
+  ],
+  "Logement": [
+    { q:"A quel étage habitait-elle dans le 1er logement acheté à Compiègne ?", a:["1er","2ème","3ème","4ème"], c:3, pts:1 },
+    { q:"Au-dessus de quelle enseigne a-t-elle grandi ?", a:["Inno","Prisunic","Félix Potin","Monoprix"], c:0, pts:2 },
+    { q:"Dans quelle rue habitait-elle à Bois-Colombes ?", a:["Rue Anatole France","Rue Raspail","Rue de la Paix","Rue Victor Hugo"], c:1, pts:3 },
+    { q:"Dans son appartement parisien rue de Lille, quel était le plus grand élément parmi ces quatre ?", a:["La baignoire","La cuisine","Le placard","L'entrée"], c:0, pts:4 },
+    { q:"En mm, et sur une carte d'échelle 1:10 000, quel était l'écartement du compas dont la pointe était plantée sur le Monoprix de Compiègne, afin de définir la zone de recherche lors de l'achat de leur maison ?", a:["20","50","100","200"], c:2, pts:5 }
+  ],
+  "Biscarosse": [
+    { q:"Dans quel département se trouve la ville de Biscarosse ?", a:["Le Finistère","La Corse du Sud","Le Haut-Rhin","Les Landes"], c:3, pts:1 },
+    { q:"Quelle est son activité préférée à la plage ?", a:["Jouer au mölkky","Se baigner","Ecouter les conversations des voisins de serviette","Faire des mots fléchés"], c:2, pts:2 },
+    { q:"Sur la plage, où pose-t-elle systématiquement sa serviette ?", a:["En bas des dunes, pour être protégée du vent","Dans la pente, pour bien voir les enfants de haut","Au ras des vagues, pour être rafraîchie par les embruns","Sur les cailloux, pour avoir un massage pierres chaudes du dos"], c:1, pts:3 },
+    { q:"Comment s'appelle le restaurant préféré de Blandine à Biscarosse ?", a:["Le Surf Palace","La Playa","Le QG Bisca","Le Pearl"], c:0, pts:4 },
+    { q:"Quel est le menu préféré de Blandine pour l'apéro coucher de soleil au Mama Freda ?", a:["Guacamole / Cosmopolitan","Mozza sticks / Sex on the Beach","Onion rings / Gin tonic","Planche de saucisson / Mojito"], c:2, pts:5 }
+  ],"Surnom": [
+    { q:"Quel est le surnom donné à Blandine par Guillaume ?", a:["La directrice","La cheffe","La patronne","La colonelle"], c:2, pts:1 },
+    { q:"Quel est le surnom donné à Blandine par sa mère ?", a:["Pépette","Choupette","Didine","Bichette"], c:0, pts:2 },
+    { q:"Quel est le surnom donné à Blandine par son grand-père maternel ?", a:["Ma'princesse","Bichette","Louloute","Ma'tresse"], c:3, pts:3 },
+    { q:"Quel est le surnom donné à Blandine par ses anciennes équipes au travail ?", a:["Lance à eau","Casque à pointe","Fer à cheval","Pic à glace"], c:1, pts:4 },
+    { q:"Quel est le surnom complètement cancel donné par ses frères à l’adolescence ?", a:["La pouf","La grosse","La blonde","La p'tiote"], c:1, pts:5 }
+  ]
+};
+
+function start() {
+  player = document.getElementById("pseudo").value.trim();
+  if (!player) return alert("Entre un nom d'équipe");
+
+  let scores = JSON.parse(localStorage.getItem("scores")) || [];
+
+  if (scores.find(s => s.player.toLowerCase() === player.toLowerCase())) {
+    return alert("Nom déjà utilisé ! Choisis-en un autre.");
+  }
+
+  themes = Object.keys(data);
+
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("themes").classList.remove("hidden");
+
+  showThemes();
+}
+
+function showThemes() {
+  const div = document.getElementById("themeButtons");
+  div.innerHTML = "";
+
+  themes.forEach(t => {
+    const b = document.createElement("button");
+    b.textContent = t;
+    b.onclick = () => selectTheme(t);
+    div.appendChild(b);
+  });
+}
+
+function selectTheme(theme) {
+  currentTheme = theme;
+  document.getElementById("themes").classList.add("hidden");
+  document.getElementById("questions").classList.remove("hidden");
+  showQuestions();
+}
+
+function showQuestions() {
+  const div = document.getElementById("questionButtons");
+  div.innerHTML = "";
+
+  data[currentTheme].forEach((q, i) => {
+    const b = document.createElement("button");
+    b.textContent = "Question à " + q.pts + " pts";
+    b.onclick = () => loadQuestion(i);
+    div.appendChild(b);
+  });
+}
+
+function loadQuestion(i) {
+  const q = data[currentTheme][i];
+
+  document.getElementById("questions").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+
+  document.getElementById("question").textContent = q.q + " (" + q.pts + " pts)";
+
+  const div = document.getElementById("answers");
+  div.innerHTML = "";
+
+  q.a.forEach((a, idx) => {
+    const b = document.createElement("button");
+    b.textContent = a;
+    b.onclick = () => answer(i, idx, b);
+    div.appendChild(b);
+  });
+
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timeLeft = 30;
+  updateTimer();
+
+  timer = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      nextStep();
+    }
+  }, 1000);
+}
+
+function updateTimer() {
+  document.getElementById("timerText").textContent = "⏱ Temps : " + timeLeft;
+  document.getElementById("timerFill").style.width = (timeLeft / 30 * 100) + "%";
+}
+
+function answer(i, idx, btn) {
+  clearInterval(timer);
+  const q = data[currentTheme][i];
+
+  if (idx === q.c) {
+    score += q.pts;
+    btn.classList.add("correct");
+  } else {
+    btn.classList.add("wrong");
+  }
+
+  setTimeout(nextStep, 700);
+}
+
+function nextStep() {
+  themes = themes.filter(t => t !== currentTheme);
+
+  document.getElementById("quiz").classList.add("hidden");
+
+  if (themes.length > 0) {
+    document.getElementById("themes").classList.remove("hidden");
+    showThemes();
+  } else {
+    saveScore();
+    alert(player + " termine avec " + score + " points !");
+    location.reload();
+  }
+
+  document.getElementById("score").textContent = "Score : " + score;
+}
+
+function saveScore() {
+  let s = JSON.parse(localStorage.getItem("scores")) || [];
+  s.push({ player, score });
+  localStorage.setItem("scores", JSON.stringify(s));
+}
+
+function showLeaderboard() {
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("leaderboardScreen").classList.remove("hidden");
+  displayLeaderboard();
+}
+
+function backToMenu() {
+  location.reload();
+}
+
+function displayLeaderboard() {
+  let s = JSON.parse(localStorage.getItem("scores")) || [];
+  s.sort((a,b) => b.score - a.score);
+
+  const board = document.getElementById("leaderboard");
+  board.innerHTML = "";
+
+  const medals = ["🥇","🥈","🥉"];
+  let podium = "<h3>Podium</h3>";
+
+  s.slice(0,3).forEach((p,i) => {
+    podium += `<p>${medals[i]} ${p.player} - ${p.score}</p>`;
+  });
+
+  document.getElementById("podium").innerHTML = podium;
+
+  s.slice(0,10).forEach(p => {
+    board.innerHTML += `<tr><td>${p.player}</td><td>${p.score}</td></tr>`;
+  });
+}
+
+function exportCSV() {
+  let s = JSON.parse(localStorage.getItem("scores")) || [];
+  let csv = "Pseudo,Score\n";
+
+  s.forEach(p => csv += `${p.player},${p.score}\n`);
+
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "classement.csv";
+  a.click();
+}
+
+function resetScores() {
+  const pass = prompt("Mot de passe admin ?");
+  if (pass !== ADMIN_PASS) return alert("Accès refusé");
+
+  localStorage.removeItem("scores");
+  alert("Scores supprimés !");
+  location.reload();
+}
+
+</script>
+
+</body>
+</html>
