@@ -330,16 +330,22 @@ function answer(i, idx, btn) {
   setTimeout(nextStep, 700);
 }
 
-function nextStep() {
+async function nextStep() {
   themes = themes.filter(t => t !== currentTheme);
   document.getElementById("quiz").classList.add("hidden");
   if (themes.length > 0) {
     document.getElementById("themes").classList.remove("hidden");
     showThemes();
   } else {
-    saveScore();
-    alert(player + " termine avec " + score + " points !");
-    location.reload();
+    try {
+      await saveScore(); // ✅ attendre la fin de l'écriture avant de recharger
+      alert(player + " termine avec " + score + " points !");
+      location.reload();
+    } catch (e) {
+      console.error(e);
+      alert("Erreur : score non sauvegardé. Vérifie la connexion / API.");
+    }
+    return;
   }
   document.getElementById("score").textContent = "Score : " + score;
 }
@@ -351,12 +357,16 @@ async function saveScore() {
     alert("Nom déjà utilisé !");
     return;
   }
-
-  await fetch(API_URL, {
+  const res = await fetch(API_URL, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({data: [{ player, score }]})
   });
+  // Optionnel mais utile : remonte une erreur si l'API refuse l'écriture
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`POST failed: ${res.status} ${txt}`);
+  }
 }
 
 async function getScores() {
