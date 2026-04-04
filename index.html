@@ -17,7 +17,6 @@ body {
   align-items: center;
   min-height: 100vh;
 }
-
 .container {
   width: 95%;
   max-width: 1000px;
@@ -28,13 +27,11 @@ body {
   border: 1px solid rgba(233,244,249,0.2);
   text-align: center;
 }
-
 h2, h3 {
   color: #12505e;
   margin-top: 10px;
   font-family: Calibri;
 }
-
 input {
   width: 90%;
   padding: 12px;
@@ -44,7 +41,6 @@ input {
   font-size: 20px;
   text-align: center;
 }
-
 button {
   margin: 6px 0;
   padding: 14px;
@@ -57,108 +53,44 @@ button {
   font-weight: bold;
   font-size: 18px;
   transition: 0.2s;
-  touch-action: manipulation; /* ✅ mobile */
+  touch-action: manipulation;
 }
-
-button:active {
-  transform: scale(0.98);
-}
-
+button:active { transform: scale(0.98); }
 .correct { background: #1f8f3a !important; }
 .wrong { background: #b91c1c !important; }
 .hidden { display: none; }
-
-/* TIMER */
-#timerBar {
-  height: 10px;
-  width: 100%;
-  background: rgba(233,244,249,0.3);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 10px;
-}
-
-#timerFill {
-  height: 100%;
-  width: 100%;
-  background: gold;
-  transition: width 1s linear;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  color: white;
-  font-size: 18px;
-}
-
-td, th {
-  border: 1px solid rgba(233,244,249,0.3);
-  padding: 6px;
-}
-
-/* 🎯 THEME GRID */
-#themeButtons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-top: 10px;
-}
-
-/* réponses */
-#answers {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* MOBILE OPTIMIZATION */
+#timerBar {height: 10px;width: 100%;background: rgba(233,244,249,0.3);border-radius: 10px;overflow: hidden;margin-top: 10px;}
+#timerFill {height: 100%;width: 100%;background: gold;transition: width 1s linear;}
+.table {width: 100%;border-collapse: collapse;color: white;font-size: 18px;}
+td, th {border: 1px solid rgba(233,244,249,0.3);padding: 6px;}
+#themeButtons {display: grid;grid-template-columns: repeat(4, 1fr);gap: 10px;margin-top: 10px;}
+#answers {display: flex;flex-direction: column;gap: 10px;}
 @media (max-width: 600px) {
+  body {font-size: 30px;align-items: flex-start;}
+  .container {border-radius: 0;min-height: 100vh;max-width: 100%;padding: 15px;}
+  h2 { font-size: 40px; }
+  h3 { font-size: 35px; }
+  input { font-size: 18px; padding: 14px; }
+  button { font-size: 22px; padding: 16px; }
+  #themeButtons {grid-template-columns: repeat(2, 1fr);gap: 8px;}
+  .table {font-size: 14px;display: block;overflow-x: auto;}
+}
 
-  body {
-    font-size: 30px;
-    align-items: flex-start;
-    font-family: Calibri;
-  }
-  .container {
-    border-radius: 0;
-    min-height: 100vh;
-    max-width: 100%;
-    padding: 15px;
-  }
+/* Animation podium simple */
+.podium-item {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 0.5s forwards;
+}
 
-  h2 { font-size: 40px;
-    font-family: Calibri; }
-  h3 { font-size: 35px;
-    font-family: Calibri; }
-
-  input {
-    font-size: 18px;
-    font-family: Calibri;
-    padding: 14px;			  
-  }
-
-  button {
-    font-size: 22px;
-    font-family: Calibri;
-    padding: 16px;
-  }
-
-  /* mobile -> 2 colonnes */
-  #themeButtons {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .table {
-    font-size: 14px;
-    display: block;
-    overflow-x: auto;
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>
 </head>
-
 <body>
 
 <!-- START -->
@@ -176,7 +108,6 @@ td, th {
   <p id="score">Score : 0</p>
   <h5>N'hésites pas, tu devras répondre à chacun des thèmes 😉</h5>
   <h2>🚫 Interdiction de tricher via recherche internet... 🚫</h2>
-
 </div>
 
 <!-- QUESTIONS -->
@@ -197,11 +128,9 @@ td, th {
 <div class="container hidden" id="leaderboardScreen">
   <h2>🏆 Classement</h2>
   <div id="podium"></div>
-
   <button onclick="exportCSV()">📥 Export Excel</button>
   <button onclick="resetScores()">🗑 Reset scores</button>
   <button onclick="backToMenu()">Retour</button>
-
   <table class="table">
     <thead><tr><th>Equipe</th><th>Score</th></tr></thead>
     <tbody id="leaderboard"></tbody>
@@ -209,6 +138,8 @@ td, th {
 </div>
 
 <script>
+// API Google Sheet
+const API_URL = "https://sheetdb.io/api/v1/abquw6v9qfdo0";
 
 let player = "";
 let score = 0;
@@ -216,8 +147,10 @@ let themes = [];
 let currentTheme = "";
 let timer;
 let timeLeft = 30;
+let lastDataHash = "";
 const ADMIN_PASS = "admin123";
 
+// ⚠️ TON DATA ORIGINAL DOIT ÊTRE ICI
 const data = {
   "Sports": [
     { q:"Quel a été son sport de jeunesse ?", a:["Le football","La danse","Le basket","L'escalade"], c:2, pts:1 },
@@ -311,28 +244,19 @@ const data = {
   ]
 };
 
+
 function start() {
   player = document.getElementById("pseudo").value.trim();
   if (!player) return alert("Entre un nom d'équipe");
-
-  let scores = JSON.parse(localStorage.getItem("scores")) || [];
-
-  if (scores.find(s => s.player.toLowerCase() === player.toLowerCase())) {
-    return alert("Nom déjà utilisé ! Choisis-en un autre.");
-  }
-
   themes = Object.keys(data);
-
   document.getElementById("start").classList.add("hidden");
   document.getElementById("themes").classList.remove("hidden");
-
   showThemes();
 }
 
 function showThemes() {
   const div = document.getElementById("themeButtons");
   div.innerHTML = "";
-
   themes.forEach(t => {
     const b = document.createElement("button");
     b.textContent = t;
@@ -351,7 +275,6 @@ function selectTheme(theme) {
 function showQuestions() {
   const div = document.getElementById("questionButtons");
   div.innerHTML = "";
-
   data[currentTheme].forEach((q, i) => {
     const b = document.createElement("button");
     b.textContent = "Question à " + q.pts + " pts";
@@ -362,22 +285,17 @@ function showQuestions() {
 
 function loadQuestion(i) {
   const q = data[currentTheme][i];
-
   document.getElementById("questions").classList.add("hidden");
   document.getElementById("quiz").classList.remove("hidden");
-
   document.getElementById("question").textContent = q.q + " (" + q.pts + " pts)";
-
   const div = document.getElementById("answers");
   div.innerHTML = "";
-
   q.a.forEach((a, idx) => {
     const b = document.createElement("button");
     b.textContent = a;
     b.onclick = () => answer(i, idx, b);
     div.appendChild(b);
   });
-
   startTimer();
 }
 
@@ -385,11 +303,9 @@ function startTimer() {
   clearInterval(timer);
   timeLeft = 30;
   updateTimer();
-
   timer = setInterval(() => {
     timeLeft--;
     updateTimer();
-
     if (timeLeft <= 0) {
       clearInterval(timer);
       nextStep();
@@ -405,22 +321,18 @@ function updateTimer() {
 function answer(i, idx, btn) {
   clearInterval(timer);
   const q = data[currentTheme][i];
-
   if (idx === q.c) {
     score += q.pts;
     btn.classList.add("correct");
   } else {
     btn.classList.add("wrong");
   }
-
   setTimeout(nextStep, 700);
 }
 
 function nextStep() {
   themes = themes.filter(t => t !== currentTheme);
-
   document.getElementById("quiz").classList.add("hidden");
-
   if (themes.length > 0) {
     document.getElementById("themes").classList.remove("hidden");
     showThemes();
@@ -429,30 +341,48 @@ function nextStep() {
     alert(player + " termine avec " + score + " points !");
     location.reload();
   }
-
   document.getElementById("score").textContent = "Score : " + score;
 }
 
-function saveScore() {
-  let s = JSON.parse(localStorage.getItem("scores")) || [];
-  s.push({ player, score });
-  localStorage.setItem("scores", JSON.stringify(s));
+// Sauvegarde en ligne
+async function saveScore() {
+  const scores = await getScores();
+  if (scores.find(s => s.player.toLowerCase() === player.toLowerCase())) {
+    alert("Nom déjà utilisé !");
+    return;
+  }
+
+  await fetch(API_URL, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({data: [{ player, score }]})
+  });
+}
+
+async function getScores() {
+  const res = await fetch(API_URL);
+  const data = await res.json();
+  return data.map(e => ({player: e.player, score: parseInt(e.score)}));
 }
 
 function showLeaderboard() {
   document.getElementById("start").classList.add("hidden");
   document.getElementById("leaderboardScreen").classList.remove("hidden");
   displayLeaderboard();
+  liveUpdate();
 }
 
 function backToMenu() {
   location.reload();
 }
 
-function displayLeaderboard() {
-  let s = JSON.parse(localStorage.getItem("scores")) || [];
-  s.sort((a,b) => b.score - a.score);
+async function displayLeaderboard() {
+  let s = await getScores();
+  const hash = JSON.stringify(s);
+  if (hash === lastDataHash) return;
+  lastDataHash = hash;
 
+  s.sort((a,b) => b.score - a.score);
   const board = document.getElementById("leaderboard");
   board.innerHTML = "";
 
@@ -460,7 +390,7 @@ function displayLeaderboard() {
   let podium = "<h3>Podium</h3>";
 
   s.slice(0,3).forEach((p,i) => {
-    podium += `<p>${medals[i]} ${p.player} : ${p.score} pts</p>`;
+    podium += `<p class="podium-item">${medals[i]} ${p.player} : ${p.score} pts</p>`;
   });
 
   document.getElementById("podium").innerHTML = podium;
@@ -471,27 +401,19 @@ function displayLeaderboard() {
 }
 
 function exportCSV() {
-  let s = JSON.parse(localStorage.getItem("scores")) || [];
-  let csv = "Pseudo,Score\n";
-
-  s.forEach(p => csv += `${p.player},${p.score}\n`);
-
-  const blob = new Blob([csv], {type:"text/csv"});
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "classement.csv";
-  a.click();
+  alert("Export désactivé (Google Sheet fait office de source)");
 }
 
 function resetScores() {
-  const pass = prompt("Mot de passe admin ?");
-  if (pass !== ADMIN_PASS) return alert("Accès refusé");
+  alert("Reset désactivé (géré via Google Sheet)");
+}
 
-  localStorage.removeItem("scores");
-  alert("Scores supprimés !");
-  location.reload();
+// live update
+async function liveUpdate() {
+  while (true) {
+    await displayLeaderboard();
+    await new Promise(r => setTimeout(r, 1000));
+  }
 }
 
 </script>
